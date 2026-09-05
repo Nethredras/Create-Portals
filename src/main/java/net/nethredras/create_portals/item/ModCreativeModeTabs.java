@@ -20,8 +20,7 @@ public class ModCreativeModeTabs {
                     .title(Component.translatable("Create: Portals"))
                     .displayItems((parameters, output) -> {
 
-
-
+                    output.accept(ModItems.PORTAL_GUN);
 
                     }).build());
 

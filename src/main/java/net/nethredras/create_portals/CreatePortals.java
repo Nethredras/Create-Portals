@@ -1,6 +1,8 @@
 package net.nethredras.create_portals;
 
 import net.neoforged.fml.common.EventBusSubscriber;
+import net.nethredras.create_portals.block.ModBlocks;
+import net.nethredras.create_portals.block.custom.entity.ModBlockEntities;
 import net.nethredras.create_portals.item.ModCreativeModeTabs;
 import net.nethredras.create_portals.item.ModItems;
 import org.slf4j.Logger;
@@ -46,6 +48,8 @@ public class CreatePortals {
 
         // Registers
         ModItems.register(modEventBus);
+        ModBlocks.register(modEventBus);
+        ModBlockEntities.register(modEventBus);
     }
 
     private void commonSetup(FMLCommonSetupEvent event) {

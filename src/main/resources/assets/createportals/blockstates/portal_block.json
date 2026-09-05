@@ -1,0 +1,7 @@
+{
+  "variants": {
+    "": {
+      "model": "createportals:block/portal_block"
+    }
+  }
+}
