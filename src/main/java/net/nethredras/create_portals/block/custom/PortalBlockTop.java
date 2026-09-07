@@ -38,4 +38,6 @@ public class PortalBlockTop extends AbstractPortalBlock {
 
         return super.updateShape(state, direction, neighborState, level, pos, neighborPos);
     }
+
+
 }
