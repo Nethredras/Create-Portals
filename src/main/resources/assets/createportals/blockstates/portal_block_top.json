@@ -1,8 +1,13 @@
 {
   "variants": {
-    "facing=north": { "model": "createportals:block/portal_block_top" },
-    "facing=east":  { "model": "createportals:block/portal_block_top", "y": 90 },
-    "facing=south": { "model": "createportals:block/portal_block_top", "y": 180 },
-    "facing=west":  { "model": "createportals:block/portal_block_top", "y": 270 }
+    "facing=north,color=blue":   { "model": "createportals:block/portal_block_top_blue" },
+    "facing=east,color=blue":    { "model": "createportals:block/portal_block_top_blue", "y": 90 },
+    "facing=south,color=blue":   { "model": "createportals:block/portal_block_top_blue", "y": 180 },
+    "facing=west,color=blue":    { "model": "createportals:block/portal_block_top_blue", "y": 270 },
+
+    "facing=north,color=orange": { "model": "createportals:block/portal_block_top_orange" },
+    "facing=east,color=orange":  { "model": "createportals:block/portal_block_top_orange", "y": 90 },
+    "facing=south,color=orange": { "model": "createportals:block/portal_block_top_orange", "y": 180 },
+    "facing=west,color=orange":  { "model": "createportals:block/portal_block_top_orange", "y": 270 }
   }
 }

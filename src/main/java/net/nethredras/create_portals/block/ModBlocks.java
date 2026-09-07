@@ -29,8 +29,6 @@ public class ModBlocks {
     }
 
     // Register Blocks
-    // No BlockItem for either half — these are only ever placed by the
-    // portal gun's logic, never by hand from the creative menu / inventory.
     public static final DeferredBlock<PortalBlockBottom> PORTAL_BLOCK_BOTTOM = BLOCKS.register("portal_block_bottom",
             () -> new PortalBlockBottom(BlockBehaviour.Properties.of()
                     .noOcclusion()

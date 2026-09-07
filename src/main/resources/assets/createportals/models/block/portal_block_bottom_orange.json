@@ -3,8 +3,8 @@
 	"credit": "Made with Blockbench",
 	"texture_size": [32, 32],
 	"textures": {
-		"0": "createportals:block/portal_block_bottom",
-		"particle": "createportals:block/portal_block_bottom"
+		"0": "createportals:block/portal_block_bottom_orange",
+		"particle": "createportals:block/portal_block_bottom_orange"
 	},
 	"elements": [
 		{

@@ -1,8 +1,9 @@
-package net.nethredras.create_portals.item.custom;
+package net.nethredras.create_portals.item.custom.portal_gun;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionHand;
@@ -23,105 +24,131 @@ import net.nethredras.create_portals.block.ModBlocks;
 import net.nethredras.create_portals.block.custom.AbstractPortalBlock;
 import net.nethredras.create_portals.block.custom.entity.PortalBlockEntity;
 import net.nethredras.create_portals.data.ModDataComponents;
-import net.nethredras.create_portals.item.custom.portal_gun.PortalGunData;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Optional;
 
 public class PortalGunItem extends Item {
     public PortalGunItem(Properties properties) {
         super(properties);
     }
 
+    // Right-click always fires the orange portal — vanilla's use() hook
+    // already only ever runs server-side-authoritatively, so no packet
+    // is needed for this one.
     @Override
     public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand usedHand) {
         ItemStack stack = player.getItemInHand(usedHand);
 
-        if (!level.isClientSide) {
-            double reach = 100; // Reach of gun
-            Vec3 eyePos = player.getEyePosition();
-            Vec3 viewVec = player.getViewVector(1.0f);
-            Vec3 endPos = eyePos.add(viewVec.scale(reach));
-
-            ClipContext ctx = new ClipContext(
-                    eyePos,
-                    endPos,
-                    ClipContext.Block.OUTLINE,
-                    ClipContext.Fluid.NONE,
-                    player
-            );
-
-            BlockHitResult hit = level.clip(ctx);
-
-            if (hit.getType() == HitResult.Type.BLOCK) {
-                BlockPos hitPos = hit.getBlockPos();
-                Direction hitFace = hit.getDirection();
-
-                // Reject floor/ceiling hits — walls only for now
-                if (hitFace == Direction.UP || hitFace == Direction.DOWN) {
-                    level.playSound(null, player.blockPosition(), SoundEvents.ITEM_BREAK, SoundSource.PLAYERS, 0.5F, 0.8F);
-                    return InteractionResultHolder.sidedSuccess(stack, level.isClientSide);
-                }
-
-                if (canPlacePortal(level, hitPos, hitFace)) {
-                    handlePortalPlacement((ServerLevel) level, stack, hitPos, hitFace);
-                } else {
-                    level.playSound(null, player.blockPosition(), SoundEvents.ITEM_BREAK, SoundSource.PLAYERS, 0.5F, 0.8F);
-                }
-            }
+        if (!level.isClientSide && player instanceof ServerPlayer serverPlayer) {
+            firePortal(serverPlayer, stack, PortalColor.ORANGE);
         }
 
         return InteractionResultHolder.sidedSuccess(stack, level.isClientSide);
     }
 
     /**
-     * Top-level flow for firing the gun: clean up stale references,
-     * evict the oldest portal if we're already at the 2-portal cap,
-     * place the new one, and link the remaining pair (if any).
+     * Entry point for firing either colored portal, called either from
+     * use() (orange, right-click) or from FirePortalPacket's server-side
+     * handler (blue, left-click — reported by ClientPortalEvents since
+     * vanilla has no built-in left-click item hook).
      */
-    private void handlePortalPlacement(ServerLevel level, ItemStack stack, BlockPos hitPos, Direction hitFace) {
+    public void firePortal(ServerPlayer player, ItemStack stack, PortalColor color) {
+        ServerLevel level = (ServerLevel) player.level();
+
+        double reach = 100; // Reach of gun
+        Vec3 eyePos = player.getEyePosition();
+        Vec3 viewVec = player.getViewVector(1.0f);
+        Vec3 endPos = eyePos.add(viewVec.scale(reach));
+
+        ClipContext ctx = new ClipContext(
+                eyePos,
+                endPos,
+                ClipContext.Block.OUTLINE,
+                ClipContext.Fluid.NONE,
+                player
+        );
+
+        BlockHitResult hit = level.clip(ctx);
+
+        if (hit.getType() != HitResult.Type.BLOCK) {
+            return;
+        }
+
+        BlockPos hitPos = hit.getBlockPos();
+        Direction hitFace = hit.getDirection();
+
+        // Reject floor/ceiling hits — walls only for now
+        if (hitFace == Direction.UP || hitFace == Direction.DOWN) {
+            denySound(level, player);
+            return;
+        }
+
+        if (canPlacePortal(level, hitPos, hitFace)) {
+            handlePortalPlacement(level, stack, hitPos, hitFace, color);
+        } else {
+            denySound(level, player);
+        }
+    }
+
+    private void denySound(ServerLevel level, ServerPlayer player) {
+        level.playSound(null, player.blockPosition(), SoundEvents.ITEM_BREAK, SoundSource.PLAYERS, 0.5F, 0.8F);
+    }
+
+    /**
+     * Places the new portal in the given color's slot, evicting and
+     * unlinking whatever was previously there, then re-links the pair
+     * if both colors are now present.
+     */
+    private void handlePortalPlacement(ServerLevel level, ItemStack stack, BlockPos hitPos, Direction hitFace, PortalColor color) {
         BlockPos newLowerPos = hitPos.relative(hitFace);
 
         PortalGunData data = stack.getOrDefault(ModDataComponents.PORTAL_GUN_DATA.get(), PortalGunData.EMPTY);
-        List<BlockPos> portals = new ArrayList<>(data.portals());
 
-        // Drop any entries that no longer point at an actual portal block
-        // (e.g. it was mined, or its wall/other half broke via updateShape)
-        portals.removeIf(pos -> !level.getBlockState(pos).is(ModBlocks.PORTAL_BLOCK_BOTTOM.get()));
+        // Drop stale entries (portal was mined / broken by updateShape
+        // without the gun being told)
+        Optional<BlockPos> bluePos = validate(level, data.bluePortal());
+        Optional<BlockPos> orangePos = validate(level, data.orangePortal());
 
-        // At the cap: evict the oldest portal to make room
-        if (portals.size() >= 2) {
-            BlockPos oldest = portals.remove(0);
-            removePortal(level, oldest);
+        Optional<BlockPos> targetSlot = color == PortalColor.BLUE ? bluePos : orangePos;
+        Optional<BlockPos> otherSlot = color == PortalColor.BLUE ? orangePos : bluePos;
 
-            // Whatever portal remains was linked to the one we just
-            // removed — that link is now dangling, so clear it.
-            if (!portals.isEmpty()) {
-                unlinkPortal(level, portals.get(0));
-            }
+        // Replace whatever was already in this color's slot
+        if (targetSlot.isPresent()) {
+            removePortal(level, targetSlot.get());
+            otherSlot.ifPresent(pos -> unlinkPortal(level, pos));
         }
 
-        placePortal(level, hitPos, hitFace);
-        portals.add(newLowerPos);
+        placePortal(level, hitPos, hitFace, color);
 
-        // If we now have exactly 2 open portals, link them to each other
-        if (portals.size() == 2) {
-            linkPortals(level, portals.get(0), portals.get(1));
+        if (color == PortalColor.BLUE) {
+            bluePos = Optional.of(newLowerPos);
+        } else {
+            orangePos = Optional.of(newLowerPos);
         }
 
-        stack.set(ModDataComponents.PORTAL_GUN_DATA.get(), new PortalGunData(List.copyOf(portals)));
+        if (bluePos.isPresent() && orangePos.isPresent()) {
+            linkPortals(level, bluePos.get(), orangePos.get());
+        }
+
+        stack.set(ModDataComponents.PORTAL_GUN_DATA.get(), new PortalGunData(bluePos, orangePos));
+    }
+
+    private Optional<BlockPos> validate(ServerLevel level, Optional<BlockPos> pos) {
+        return pos.filter(p -> level.getBlockState(p).is(ModBlocks.PORTAL_BLOCK_BOTTOM.get()));
     }
 
     // Placing both portal halves
-    private void placePortal(ServerLevel level, BlockPos hitPos, Direction hitFace) {
+    private void placePortal(ServerLevel level, BlockPos hitPos, Direction hitFace, PortalColor color) {
         BlockPos lowerPos = hitPos.relative(hitFace);
         BlockPos upperPos = lowerPos.above();
 
         BlockState lowerState = ModBlocks.PORTAL_BLOCK_BOTTOM.get().defaultBlockState()
-                .setValue(AbstractPortalBlock.FACING, hitFace);
+                .setValue(AbstractPortalBlock.FACING, hitFace)
+                .setValue(AbstractPortalBlock.COLOR, color);
 
         BlockState upperState = ModBlocks.PORTAL_BLOCK_TOP.get().defaultBlockState()
-                .setValue(AbstractPortalBlock.FACING, hitFace);
+                .setValue(AbstractPortalBlock.FACING, hitFace)
+                .setValue(AbstractPortalBlock.COLOR, color);
 
         level.setBlock(lowerPos, lowerState, Block.UPDATE_ALL);
         level.setBlock(upperPos, upperState, Block.UPDATE_ALL);

@@ -5,6 +5,7 @@ import net.nethredras.create_portals.block.custom.entity.ModBlockEntities;
 import net.nethredras.create_portals.data.ModDataComponents;
 import net.nethredras.create_portals.item.ModCreativeModeTabs;
 import net.nethredras.create_portals.item.ModItems;
+import net.nethredras.create_portals.network.ModNetworking;
 import org.slf4j.Logger;
 
 import com.mojang.logging.LogUtils;

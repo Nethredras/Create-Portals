@@ -6,7 +6,7 @@ import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.registries.DeferredItem;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import net.nethredras.create_portals.CreatePortals;
-import net.nethredras.create_portals.item.custom.PortalGunItem;
+import net.nethredras.create_portals.item.custom.portal_gun.PortalGunItem;
 
 public class ModItems {
     public static final DeferredRegister.Items ITEMS = DeferredRegister.createItems(CreatePortals.MOD_ID);

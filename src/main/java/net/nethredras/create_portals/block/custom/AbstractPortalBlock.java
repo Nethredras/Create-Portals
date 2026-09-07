@@ -5,22 +5,25 @@ import net.minecraft.core.Direction;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.DirectionProperty;
+import net.minecraft.world.level.block.state.properties.EnumProperty;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.VoxelShape;
+import net.nethredras.create_portals.item.custom.portal_gun.PortalColor;
 
 public abstract class AbstractPortalBlock extends Block {
     public static final DirectionProperty FACING = BlockStateProperties.HORIZONTAL_FACING;
+    public static final EnumProperty<PortalColor> COLOR = EnumProperty.create("color", PortalColor.class);
     public static final VoxelShape SHAPE = Block.box(0, 0, 0, 0, 0, 0);
 
     public AbstractPortalBlock(Properties properties) {
         super(properties);
         this.registerDefaultState(this.getStateDefinition().any()
-                .setValue(FACING, Direction.NORTH));
+                .setValue(FACING, Direction.NORTH)
+                .setValue(COLOR, PortalColor.BLUE));
     }
 
     @Override
@@ -30,7 +33,7 @@ public abstract class AbstractPortalBlock extends Block {
 
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
-        builder.add(FACING);
+        builder.add(FACING, COLOR);
     }
 
     /**
@@ -48,7 +51,6 @@ public abstract class AbstractPortalBlock extends Block {
                     && Block.isFaceFull(neighborState.getCollisionShape(level, neighborPos), facing);
         }
 
-        // Not the wall-facing direction, so this check doesn't apply here.
         return true;
     }
 }
