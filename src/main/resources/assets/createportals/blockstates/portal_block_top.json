@@ -1,0 +1,8 @@
+{
+  "variants": {
+    "facing=north": { "model": "createportals:block/portal_block_top" },
+    "facing=east":  { "model": "createportals:block/portal_block_top", "y": 90 },
+    "facing=south": { "model": "createportals:block/portal_block_top", "y": 180 },
+    "facing=west":  { "model": "createportals:block/portal_block_top", "y": 270 }
+  }
+}

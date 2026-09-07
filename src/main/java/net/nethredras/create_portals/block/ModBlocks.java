@@ -8,7 +8,8 @@ import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.registries.DeferredBlock;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import net.nethredras.create_portals.CreatePortals;
-import net.nethredras.create_portals.block.custom.PortalBlock;
+import net.nethredras.create_portals.block.custom.PortalBlockBottom;
+import net.nethredras.create_portals.block.custom.PortalBlockTop;
 import net.nethredras.create_portals.item.ModItems;
 
 import java.util.function.Supplier;
@@ -28,9 +29,19 @@ public class ModBlocks {
     }
 
     // Register Blocks
-    public static DeferredBlock<Block> PORTAL_BLOCK = BLOCKS.register("portal_block",
-            () -> new PortalBlock(BlockBehaviour.Properties.of().noOcclusion().noCollission()));
+    // No BlockItem for either half — these are only ever placed by the
+    // portal gun's logic, never by hand from the creative menu / inventory.
+    public static final DeferredBlock<PortalBlockBottom> PORTAL_BLOCK_BOTTOM = BLOCKS.register("portal_block_bottom",
+            () -> new PortalBlockBottom(BlockBehaviour.Properties.of()
+                    .noOcclusion()
+                    .noCollission()
+                    .replaceable()));
 
+    public static final DeferredBlock<PortalBlockTop> PORTAL_BLOCK_TOP = BLOCKS.register("portal_block_top",
+            () -> new PortalBlockTop(BlockBehaviour.Properties.of()
+                    .noOcclusion()
+                    .noCollission()
+                    .replaceable()));
 
 
     // Event Bus

@@ -15,7 +15,7 @@ public class ModBlockEntities {
 
     public static final Supplier<BlockEntityType<PortalBlockEntity>> PORTAL_BE =
             BLOCK_ENTITIES.register("portal_be", () -> BlockEntityType.Builder.of(
-                    PortalBlockEntity::new, ModBlocks.PORTAL_BLOCK.get()).build(null)
+                    PortalBlockEntity::new, ModBlocks.PORTAL_BLOCK_BOTTOM.get()).build(null)
             );
 
     public static void register(IEventBus eventBus) {
