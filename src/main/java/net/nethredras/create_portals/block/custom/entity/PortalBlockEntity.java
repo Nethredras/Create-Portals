@@ -2,8 +2,10 @@ package net.nethredras.create_portals.block.custom.entity;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.GlobalPos;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.Tag;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import org.jetbrains.annotations.Nullable;
@@ -12,8 +14,7 @@ public class PortalBlockEntity extends BlockEntity {
     private static final String TAG_LINKED_POS = "LinkedPortal";
     private static final String TAG_FACING = "Facing";
 
-    @Nullable
-    private BlockPos linkedPortal;
+    private @Nullable GlobalPos linkedPortal;
     private Direction facing = Direction.NORTH;
 
     public PortalBlockEntity(BlockPos pos, BlockState state) {
@@ -21,16 +22,21 @@ public class PortalBlockEntity extends BlockEntity {
     }
 
     // --- Linked portal ---
-    @Nullable
-    public BlockPos getLinkedPortal() {
+    public @Nullable GlobalPos getLinkedPortal() {
         return linkedPortal;
     }
 
-    public void setLinkedPortal(@Nullable BlockPos linkedPortal) {
+    public void setLinkedPortal(@Nullable GlobalPos linkedPortal) {
         this.linkedPortal = linkedPortal;
-        setChanged(); // marks the chunk dirty so it actually gets saved
+        setChanged();
         if (level != null) {
             level.sendBlockUpdated(getBlockPos(), getBlockState(), getBlockState(), 3);
+
+            BlockPos wallPos = getBlockPos().relative(facing.getOpposite());
+            if (level.isLoaded(wallPos)) {
+                BlockState wallState = level.getBlockState(wallPos);
+                level.sendBlockUpdated(wallPos, wallState, wallState, 3);
+            }
         }
     }
 
@@ -62,7 +68,9 @@ public class PortalBlockEntity extends BlockEntity {
     protected void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.saveAdditional(tag, registries);
         if (linkedPortal != null) {
-            tag.putLong(TAG_LINKED_POS, linkedPortal.asLong());
+            GlobalPos.CODEC.encodeStart(registries.createSerializationContext(net.minecraft.nbt.NbtOps.INSTANCE), linkedPortal)
+                    .resultOrPartial(err -> {}) // Silently drops error
+                    .ifPresent(encoded -> tag.put(TAG_LINKED_POS, encoded));
         }
         tag.putString(TAG_FACING, facing.getSerializedName());
     }
@@ -71,10 +79,14 @@ public class PortalBlockEntity extends BlockEntity {
     protected void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.loadAdditional(tag, registries);
         if (tag.contains(TAG_LINKED_POS)) {
-            linkedPortal = BlockPos.of(tag.getLong(TAG_LINKED_POS));
+            Tag posTag = tag.get(TAG_LINKED_POS);
+            linkedPortal = GlobalPos.CODEC.parse(registries.createSerializationContext(net.minecraft.nbt.NbtOps.INSTANCE), posTag)
+                    .resultOrPartial(err -> {})
+                    .orElse(null);
         } else {
             linkedPortal = null;
         }
+
         if (tag.contains(TAG_FACING)) {
             facing = Direction.byName(tag.getString(TAG_FACING));
             if (facing == null) {

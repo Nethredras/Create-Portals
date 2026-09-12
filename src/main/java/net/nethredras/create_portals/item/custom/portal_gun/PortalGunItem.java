@@ -2,6 +2,8 @@ package net.nethredras.create_portals.item.custom.portal_gun;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.GlobalPos;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
@@ -25,6 +27,7 @@ import net.nethredras.create_portals.block.custom.AbstractPortalBlock;
 import net.nethredras.create_portals.block.custom.entity.PortalBlockEntity;
 import net.nethredras.create_portals.data.ModDataComponents;
 
+import javax.annotation.Nullable;
 import java.util.Optional;
 
 public class PortalGunItem extends Item {
@@ -32,9 +35,6 @@ public class PortalGunItem extends Item {
         super(properties);
     }
 
-    // Right-click always fires the orange portal — vanilla's use() hook
-    // already only ever runs server-side-authoritatively, so no packet
-    // is needed for this one.
     @Override
     public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand usedHand) {
         ItemStack stack = player.getItemInHand(usedHand);
@@ -46,16 +46,10 @@ public class PortalGunItem extends Item {
         return InteractionResultHolder.sidedSuccess(stack, level.isClientSide);
     }
 
-    /**
-     * Entry point for firing either colored portal, called either from
-     * use() (orange, right-click) or from FirePortalPacket's server-side
-     * handler (blue, left-click — reported by ClientPortalEvents since
-     * vanilla has no built-in left-click item hook).
-     */
     public void firePortal(ServerPlayer player, ItemStack stack, PortalColor color) {
         ServerLevel level = (ServerLevel) player.level();
 
-        double reach = 100; // Reach of gun
+        double reach = 100;
         Vec3 eyePos = player.getEyePosition();
         Vec3 viewVec = player.getViewVector(1.0f);
         Vec3 endPos = eyePos.add(viewVec.scale(reach));
@@ -77,7 +71,6 @@ public class PortalGunItem extends Item {
         BlockPos hitPos = hit.getBlockPos();
         Direction hitFace = hit.getDirection();
 
-        // Reject floor/ceiling hits — walls only for now
         if (hitFace == Direction.UP || hitFace == Direction.DOWN) {
             denySound(level, player);
             return;
@@ -96,48 +89,64 @@ public class PortalGunItem extends Item {
 
     /**
      * Places the new portal in the given color's slot, evicting and
-     * unlinking whatever was previously there, then re-links the pair
-     * if both colors are now present.
+     * unlinking whatever was previously there (which may be in a
+     * different dimension), then re-links the pair if both colors are
+     * now present.
      */
     private void handlePortalPlacement(ServerLevel level, ItemStack stack, BlockPos hitPos, Direction hitFace, PortalColor color) {
+        MinecraftServer server = level.getServer();
         BlockPos newLowerPos = hitPos.relative(hitFace);
+        GlobalPos newGlobalPos = GlobalPos.of(level.dimension(), newLowerPos);
 
         PortalGunData data = stack.getOrDefault(ModDataComponents.PORTAL_GUN_DATA.get(), PortalGunData.EMPTY);
 
-        // Drop stale entries (portal was mined / broken by updateShape
-        // without the gun being told)
-        Optional<BlockPos> bluePos = validate(level, data.bluePortal());
-        Optional<BlockPos> orangePos = validate(level, data.orangePortal());
+        // Drop stale entries (portal was mined / broken without the gun being told)
+        Optional<GlobalPos> bluePos = validate(server, data.bluePortal());
+        Optional<GlobalPos> orangePos = validate(server, data.orangePortal());
 
-        Optional<BlockPos> targetSlot = color == PortalColor.BLUE ? bluePos : orangePos;
-        Optional<BlockPos> otherSlot = color == PortalColor.BLUE ? orangePos : bluePos;
+        Optional<GlobalPos> targetSlot = color == PortalColor.BLUE ? bluePos : orangePos;
+        Optional<GlobalPos> otherSlot = color == PortalColor.BLUE ? orangePos : bluePos;
 
         // Replace whatever was already in this color's slot
         if (targetSlot.isPresent()) {
-            removePortal(level, targetSlot.get());
-            otherSlot.ifPresent(pos -> unlinkPortal(level, pos));
+            removePortal(server, targetSlot.get());
+            otherSlot.ifPresent(pos -> unlinkPortal(server, pos));
         }
 
         placePortal(level, hitPos, hitFace, color);
 
         if (color == PortalColor.BLUE) {
-            bluePos = Optional.of(newLowerPos);
+            bluePos = Optional.of(newGlobalPos);
         } else {
-            orangePos = Optional.of(newLowerPos);
+            orangePos = Optional.of(newGlobalPos);
         }
 
         if (bluePos.isPresent() && orangePos.isPresent()) {
-            linkPortals(level, bluePos.get(), orangePos.get());
+            linkPortals(server, bluePos.get(), orangePos.get());
         }
 
         stack.set(ModDataComponents.PORTAL_GUN_DATA.get(), new PortalGunData(bluePos, orangePos));
     }
 
-    private Optional<BlockPos> validate(ServerLevel level, Optional<BlockPos> pos) {
-        return pos.filter(p -> level.getBlockState(p).is(ModBlocks.PORTAL_BLOCK_BOTTOM.get()));
+    /**
+     * Resolves a level from a server and dimension key. Returns null if
+     * the dimension isn't currently loaded (shouldn't normally happen
+     * for standard dimensions, but custom/removed dimensions could
+     * theoretically go missing).
+     */
+    @Nullable
+    private ServerLevel resolveLevel(MinecraftServer server, GlobalPos globalPos) {
+        return server.getLevel(globalPos.dimension());
     }
 
-    // Placing both portal halves
+    private Optional<GlobalPos> validate(MinecraftServer server, Optional<GlobalPos> globalPos) {
+        return globalPos.filter(gp -> {
+            ServerLevel targetLevel = resolveLevel(server, gp);
+            return targetLevel != null && targetLevel.getBlockState(gp.pos()).is(ModBlocks.PORTAL_BLOCK_BOTTOM.get());
+        });
+    }
+
+    // Placing both portal halves — always in the level the player fired from
     private void placePortal(ServerLevel level, BlockPos hitPos, Direction hitFace, PortalColor color) {
         BlockPos lowerPos = hitPos.relative(hitFace);
         BlockPos upperPos = lowerPos.above();
@@ -154,24 +163,40 @@ public class PortalGunItem extends Item {
         level.setBlock(upperPos, upperState, Block.UPDATE_ALL);
     }
 
-    // Removing both halves of a portal at its bottom-block position
-    private void removePortal(Level level, BlockPos lowerPos) {
-        level.setBlock(lowerPos, Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL);
-        level.setBlock(lowerPos.above(), Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL);
+    // Removing both halves of a portal at its bottom-block global position
+    private void removePortal(MinecraftServer server, GlobalPos globalPos) {
+        ServerLevel targetLevel = resolveLevel(server, globalPos);
+        if (targetLevel == null) {
+            return;
+        }
+        BlockPos lowerPos = globalPos.pos();
+        targetLevel.setBlock(lowerPos, Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL);
+        targetLevel.setBlock(lowerPos.above(), Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL);
     }
 
-    private void linkPortals(Level level, BlockPos posA, BlockPos posB) {
-        BlockEntity beA = level.getBlockEntity(posA);
-        BlockEntity beB = level.getBlockEntity(posB);
+    private void linkPortals(MinecraftServer server, GlobalPos globalA, GlobalPos globalB) {
+        ServerLevel levelA = resolveLevel(server, globalA);
+        ServerLevel levelB = resolveLevel(server, globalB);
+
+        if (levelA == null || levelB == null) {
+            return;
+        }
+
+        BlockEntity beA = levelA.getBlockEntity(globalA.pos());
+        BlockEntity beB = levelB.getBlockEntity(globalB.pos());
 
         if (beA instanceof PortalBlockEntity portalA && beB instanceof PortalBlockEntity portalB) {
-            portalA.setLinkedPortal(posB);
-            portalB.setLinkedPortal(posA);
+            portalA.setLinkedPortal(globalB);
+            portalB.setLinkedPortal(globalA);
         }
     }
 
-    private void unlinkPortal(Level level, BlockPos lowerPos) {
-        if (level.getBlockEntity(lowerPos) instanceof PortalBlockEntity portal) {
+    private void unlinkPortal(MinecraftServer server, GlobalPos globalPos) {
+        ServerLevel targetLevel = resolveLevel(server, globalPos);
+        if (targetLevel == null) {
+            return;
+        }
+        if (targetLevel.getBlockEntity(globalPos.pos()) instanceof PortalBlockEntity portal) {
             portal.unlink();
         }
     }

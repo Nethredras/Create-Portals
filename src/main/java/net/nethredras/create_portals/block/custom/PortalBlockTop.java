@@ -5,9 +5,12 @@ import net.minecraft.core.Direction;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.EntityBlock;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.nethredras.create_portals.block.ModBlocks;
 import net.nethredras.create_portals.block.custom.entity.PortalBlockEntity;
+import org.jetbrains.annotations.Nullable;
 
 public class PortalBlockTop extends AbstractPortalBlock {
 
@@ -38,6 +41,7 @@ public class PortalBlockTop extends AbstractPortalBlock {
 
         return super.updateShape(state, direction, neighborState, level, pos, neighborPos);
     }
+
 
 
 }
