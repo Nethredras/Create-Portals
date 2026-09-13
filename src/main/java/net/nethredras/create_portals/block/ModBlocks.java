@@ -8,8 +8,10 @@ import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.registries.DeferredBlock;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import net.nethredras.create_portals.CreatePortals;
+import net.nethredras.create_portals.block.custom.FlatPortalBlockBottom;
 import net.nethredras.create_portals.block.custom.PortalBlockBottom;
 import net.nethredras.create_portals.block.custom.PortalBlockTop;
+import net.nethredras.create_portals.block.custom.FlatPortalBlockTop;
 import net.nethredras.create_portals.item.ModItems;
 
 import java.util.function.Supplier;
@@ -29,6 +31,7 @@ public class ModBlocks {
     }
 
     // Register Blocks
+    // Portal Blocks
     public static final DeferredBlock<PortalBlockBottom> PORTAL_BLOCK_BOTTOM = BLOCKS.register("portal_block_bottom",
             () -> new PortalBlockBottom(BlockBehaviour.Properties.of()
                     .noOcclusion()
@@ -37,6 +40,18 @@ public class ModBlocks {
 
     public static final DeferredBlock<PortalBlockTop> PORTAL_BLOCK_TOP = BLOCKS.register("portal_block_top",
             () -> new PortalBlockTop(BlockBehaviour.Properties.of()
+                    .noOcclusion()
+                    .noCollission()
+                    .replaceable()));
+
+    public static final DeferredBlock<FlatPortalBlockBottom> FLAT_PORTAL_BLOCK_BOTTOM = BLOCKS.register("flat_portal_block_bottom",
+            () -> new FlatPortalBlockBottom(BlockBehaviour.Properties.of()
+                    .noOcclusion()
+                    .noCollission()
+                    .replaceable()));
+
+    public static final DeferredBlock<FlatPortalBlockTop> FLAT_PORTAL_BLOCK_TOP = BLOCKS.register("flat_portal_block_top",
+            () -> new FlatPortalBlockTop(BlockBehaviour.Properties.of()
                     .noOcclusion()
                     .noCollission()
                     .replaceable()));

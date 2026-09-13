@@ -12,7 +12,9 @@ import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import net.nethredras.create_portals.block.ModBlocks;
+import net.nethredras.create_portals.block.custom.AbstractFlatPortalBlock;
 import net.nethredras.create_portals.block.custom.AbstractPortalBlock;
+import net.nethredras.create_portals.block.custom.FlatPortalBlockBottom;
 import net.nethredras.create_portals.block.custom.entity.PortalBlockEntity;
 import net.nethredras.create_portals.util.PortalDetectionUtil;
 import org.spongepowered.asm.mixin.Mixin;
@@ -26,23 +28,8 @@ public abstract class PortalCollisionMixer {
     // Injections
     @Inject(method = "getCollisionShape(Lnet/minecraft/world/level/BlockGetter;Lnet/minecraft/core/BlockPos;)Lnet/minecraft/world/phys/shapes/VoxelShape;", at = @At("HEAD"), cancellable = true)
     public void removeCollisionShape(BlockGetter level, BlockPos pos, CallbackInfoReturnable<VoxelShape> cir) {
-        PortalDetectionUtil portalDetectionUtil = new PortalDetectionUtil();
-        Direction portalDirection = portalDetectionUtil.getPortalDirection(level, pos);
-
-        if (portalDirection != null) {
-            VoxelShape shape;
-
-            if (portalIsLow(level, pos, portalDirection)) {
-                if (!isLinked(level, pos, portalDirection)) {
-                    shape = Block.box(0, 0, 0, 16, 16, 16);
-                } else {
-                    shape = makeLowerShape(portalDirection);
-
-                }
-            } else {
-                shape = makeUpperShape(portalDirection);
-            }
-
+        VoxelShape shape = calcCollision(level, pos, cir);
+        if (!shape.isEmpty()) {
             cir.setReturnValue(shape);
             cir.cancel();
         }
@@ -50,22 +37,8 @@ public abstract class PortalCollisionMixer {
 
     @Inject(method = "getCollisionShape(Lnet/minecraft/world/level/BlockGetter;Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/phys/shapes/CollisionContext;)Lnet/minecraft/world/phys/shapes/VoxelShape;", at = @At("HEAD"), cancellable = true)
     private void removeCollisionShape(BlockGetter level, BlockPos pos, CollisionContext context, CallbackInfoReturnable<VoxelShape> cir) {
-        PortalDetectionUtil portalDetectionUtil = new PortalDetectionUtil();
-        Direction portalDirection = portalDetectionUtil.getPortalDirection(level, pos);
-
-        if (portalDirection != null) {
-            VoxelShape shape;
-
-            if (portalIsLow(level, pos, portalDirection)) {
-                if (!isLinked(level, pos, portalDirection)) {
-                    shape = Block.box(0, 0, 0, 16, 16, 16);
-                } else {
-                    shape = makeLowerShape(portalDirection);
-                }
-            } else {
-                shape = makeUpperShape(portalDirection);
-            }
-
+        VoxelShape shape = calcCollision(level, pos, cir);
+        if (!shape.isEmpty()) {
             cir.setReturnValue(shape);
             cir.cancel();
         }
@@ -79,6 +52,53 @@ public abstract class PortalCollisionMixer {
             cir.setReturnValue(false);
             cir.cancel();
         }
+    }
+
+    // Calc collision
+    public VoxelShape calcCollision(BlockGetter level, BlockPos pos, CallbackInfoReturnable<VoxelShape> cir) {
+        PortalDetectionUtil portalDetectionUtil = new PortalDetectionUtil();
+        Direction portalDirection = portalDetectionUtil.getPortalDirection(level, pos);
+        VoxelShape shape = Shapes.empty();
+
+        if (portalDirection != null) {
+            if (!(portalDirection == Direction.UP) && !(portalDirection == Direction.DOWN)) {
+                if (portalIsLow(level, pos, portalDirection)) {
+                    if (!isLinked(level, pos, portalDirection)) {
+                        shape = Block.box(0, 0, 0, 16, 16, 16);
+                    } else {
+                        shape = makeLowerShape(portalDirection);
+
+                    }
+                } else {
+                    shape = makeUpperShape(portalDirection);
+                }
+            } else {
+                BlockPos flatPortalPos = pos.relative(portalDirection);
+                BlockState flatPortalState = level.getBlockState(flatPortalPos);
+
+                if (flatPortalState.getBlock() instanceof AbstractFlatPortalBlock) {
+                    Direction orientation = flatPortalState.getValue(AbstractFlatPortalBlock.ORIENTATION);
+
+                    if (portalDirection == Direction.UP) {
+                        if (flatPortalState.getBlock() instanceof FlatPortalBlockBottom) {
+                            shape = makeFloorShape(orientation);
+                        } else {
+                            shape = makeFloorShape(orientation.getOpposite());
+                        }
+                    } else {
+                        if (flatPortalState.getBlock() instanceof FlatPortalBlockBottom) {
+                            shape = makeCeilingShape(orientation);
+                        } else {
+                            shape = makeCeilingShape(orientation.getOpposite());
+                        }
+                    }
+                }
+            }
+
+
+        }
+
+        return shape;
     }
 
 
@@ -183,6 +203,70 @@ public abstract class PortalCollisionMixer {
                 shape = Shapes.join(shape, Shapes.box(0, 0, 0, 1, 1, 0.0625), BooleanOp.OR);
                 shape = Shapes.join(shape, Shapes.box(0, 0, 0.9375, 1, 1, 1), BooleanOp.OR);
                 shape = Shapes.join(shape, Shapes.box(0, 0.9375, 0, 1, 1, 1), BooleanOp.OR);
+                break;
+        }
+
+        return shape;
+    }
+
+    // Make shape for floor portal
+    public VoxelShape makeFloorShape(Direction orientation) {
+        VoxelShape shape = Shapes.empty();
+
+        switch (orientation) {
+            case NORTH:
+                shape = Shapes.join(shape, Shapes.box(0, 0.0625, 0, 0.0625, 1, 1), BooleanOp.OR);
+                shape = Shapes.join(shape, Shapes.box(0.9375, 0.0625, 0, 1, 1, 1), BooleanOp.OR);
+                shape = Shapes.join(shape, Shapes.box(0.0625, 0.0625, 0.9375, 0.9375, 1, 1), BooleanOp.OR);
+                break;
+            case EAST:
+                shape = Shapes.join(shape, Shapes.box(0, 0.0625, 0, 0.0625, 1, 1), BooleanOp.OR);
+                shape = Shapes.join(shape, Shapes.box(0.0625, 0.0625, 0.9375, 1, 1, 1), BooleanOp.OR);
+                shape = Shapes.join(shape, Shapes.box(0.0625, 0.0625, 0, 1, 1, 0.0625), BooleanOp.OR);
+                break;
+            case SOUTH:
+                shape = Shapes.join(shape, Shapes.box(0, 0.0625, 0, 0.0625, 1, 1), BooleanOp.OR);
+                shape = Shapes.join(shape, Shapes.box(0.9375, 0.0625, 0, 1, 1, 1), BooleanOp.OR);
+                shape = Shapes.join(shape, Shapes.box(0.0625, 0.0625, 0, 0.9375, 1, 0.0625), BooleanOp.OR);
+                break;
+            case WEST:
+                shape = Shapes.join(shape, Shapes.box(0.9375, 0.0625, 0, 1, 1, 1), BooleanOp.OR);
+                shape = Shapes.join(shape, Shapes.box(0, 0.0625, 0.9375, 0.9375, 1, 1), BooleanOp.OR);
+                shape = Shapes.join(shape, Shapes.box(0, 0.0625, 0, 0.9375, 1, 0.0625), BooleanOp.OR);
+                break;
+        }
+
+        return shape;
+    }
+
+    // Make shape for ceiling portal
+    public VoxelShape makeCeilingShape(Direction orientation) {
+        VoxelShape shape = Shapes.empty();
+
+        switch (orientation) {
+            case NORTH:
+                shape = Shapes.join(shape, Shapes.box(0, 0.9375, 0, 1, 1, 1), BooleanOp.OR);
+                shape = Shapes.join(shape, Shapes.box(0, 0, 0.9375, 1, 0.9375, 1), BooleanOp.OR);
+                shape = Shapes.join(shape, Shapes.box(0, 0, 0, 0.0625, 0.9375, 0.9375), BooleanOp.OR);
+                shape = Shapes.join(shape, Shapes.box(0.9375, 0, 0, 1, 0.9375, 0.9375), BooleanOp.OR);
+                break;
+            case EAST:
+                shape = Shapes.join(shape, Shapes.box(0, 0.9375, 0, 1, 1, 1), BooleanOp.OR);
+                shape = Shapes.join(shape, Shapes.box(0, 0, 0, 0.0625, 0.9375, 1), BooleanOp.OR);
+                shape = Shapes.join(shape, Shapes.box(0.0625, 0, 0.9375, 1, 0.9375, 1), BooleanOp.OR);
+                shape = Shapes.join(shape, Shapes.box(0.0625, 0, 0, 1, 0.9375, 0.0625), BooleanOp.OR);
+                break;
+            case SOUTH:
+                shape = Shapes.join(shape, Shapes.box(0, 0.9375, 0, 1, 1, 1), BooleanOp.OR);
+                shape = Shapes.join(shape, Shapes.box(0, 0, 0, 1, 0.9375, 0.0625), BooleanOp.OR);
+                shape = Shapes.join(shape, Shapes.box(0, 0, 0.0625, 0.0625, 0.9375, 1), BooleanOp.OR);
+                shape = Shapes.join(shape, Shapes.box(0.9375, 0, 0.0625, 1, 0.9375, 1), BooleanOp.OR);
+                break;
+            case WEST:
+                shape = Shapes.join(shape, Shapes.box(0, 0.9375, 0, 1, 1, 1), BooleanOp.OR);
+                shape = Shapes.join(shape, Shapes.box(0.9375, 0, 0, 1, 0.9375, 1), BooleanOp.OR);
+                shape = Shapes.join(shape, Shapes.box(0, 0, 0.9375, 0.9375, 0.9375, 1), BooleanOp.OR);
+                shape = Shapes.join(shape, Shapes.box(0, 0, 0, 0.9375, 0.9375, 0.0625), BooleanOp.OR);
                 break;
         }
 

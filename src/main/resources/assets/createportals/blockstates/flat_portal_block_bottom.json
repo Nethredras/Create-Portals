@@ -1,0 +1,23 @@
+{
+  "variants": {
+    "facing=up,orientation=north,color=blue":    { "model": "createportals:block/flat_portal_block_bottom_blue" },
+    "facing=up,orientation=east,color=blue":     { "model": "createportals:block/flat_portal_block_bottom_blue", "y": 90 },
+    "facing=up,orientation=south,color=blue":    { "model": "createportals:block/flat_portal_block_bottom_blue", "y": 180 },
+    "facing=up,orientation=west,color=blue":     { "model": "createportals:block/flat_portal_block_bottom_blue", "y": 270 },
+
+    "facing=up,orientation=north,color=orange":  { "model": "createportals:block/flat_portal_block_bottom_orange" },
+    "facing=up,orientation=east,color=orange":   { "model": "createportals:block/flat_portal_block_bottom_orange", "y": 90 },
+    "facing=up,orientation=south,color=orange":  { "model": "createportals:block/flat_portal_block_bottom_orange", "y": 180 },
+    "facing=up,orientation=west,color=orange":   { "model": "createportals:block/flat_portal_block_bottom_orange", "y": 270 },
+
+    "facing=down,orientation=north,color=blue":  { "model": "createportals:block/flat_portal_block_top_blue", "x": 180 },
+    "facing=down,orientation=east,color=blue":   { "model": "createportals:block/flat_portal_block_top_blue", "x": 180, "y": 90 },
+    "facing=down,orientation=south,color=blue":  { "model": "createportals:block/flat_portal_block_top_blue", "x": 180, "y": 180 },
+    "facing=down,orientation=west,color=blue":   { "model": "createportals:block/flat_portal_block_top_blue", "x": 180, "y": 270 },
+
+    "facing=down,orientation=north,color=orange":{ "model": "createportals:block/flat_portal_block_top_orange", "x": 180 },
+    "facing=down,orientation=east,color=orange": { "model": "createportals:block/flat_portal_block_top_orange", "x": 180, "y": 90 },
+    "facing=down,orientation=south,color=orange":{ "model": "createportals:block/flat_portal_block_top_orange", "x": 180, "y": 180 },
+    "facing=down,orientation=west,color=orange": { "model": "createportals:block/flat_portal_block_top_orange", "x": 180, "y": 270 }
+  }
+}

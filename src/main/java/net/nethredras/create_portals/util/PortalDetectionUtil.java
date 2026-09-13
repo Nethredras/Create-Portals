@@ -3,8 +3,10 @@ package net.nethredras.create_portals.util;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.level.BlockGetter;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
+import net.nethredras.create_portals.block.custom.AbstractFlatPortalBlock;
 import net.nethredras.create_portals.block.custom.AbstractPortalBlock;
 
 public class PortalDetectionUtil {
@@ -18,48 +20,59 @@ public class PortalDetectionUtil {
         BlockPos eastPos = new BlockPos(pos.getX() + 1, pos.getY(), pos.getZ());
         BlockPos southPos = new BlockPos(pos.getX(), pos.getY(), pos.getZ() + 1);
         BlockPos westPos = new BlockPos(pos.getX() - 1, pos.getY(), pos.getZ());
-
-        BlockState sourroundignBlockState = level.getBlockState(northPos);
+        BlockPos upPos = pos.above();
+        BlockPos downPos = pos.below();
 
         // North
-        if (sourroundignBlockState.getBlock() instanceof AbstractPortalBlock) {
-            Direction portalDirection = level.getBlockState(northPos).getValue(AbstractPortalBlock.FACING);
-
-            if (portalDirection == Direction.NORTH) {
-                return Direction.NORTH;
-            }
+        if (isAbstractPortalBlock(northPos, level, Direction.NORTH)) {
+            return Direction.NORTH;
         }
 
-        // East
-        sourroundignBlockState = level.getBlockState(eastPos);
-        if (sourroundignBlockState.getBlock() instanceof AbstractPortalBlock) {
-            Direction portalDirection = level.getBlockState(eastPos).getValue(AbstractPortalBlock.FACING);
 
-            if (portalDirection == Direction.EAST) {
-                return Direction.EAST;
-            }
+        // East
+        if (isAbstractPortalBlock(eastPos, level, Direction.EAST)) {
+            return Direction.EAST;
         }
 
         // South
-        sourroundignBlockState = level.getBlockState(southPos);
-        if (sourroundignBlockState.getBlock() instanceof AbstractPortalBlock) {
-            Direction portalDirection = level.getBlockState(southPos).getValue(AbstractPortalBlock.FACING);
-
-            if (portalDirection == Direction.SOUTH) {
-                return Direction.SOUTH;
-            }
+        if (isAbstractPortalBlock(southPos, level, Direction.SOUTH)) {
+            return Direction.SOUTH;
         }
 
         // West
-        sourroundignBlockState = level.getBlockState(westPos);
-        if (sourroundignBlockState.getBlock() instanceof AbstractPortalBlock) {
-            Direction portalDirection = level.getBlockState(westPos).getValue(AbstractPortalBlock.FACING);
+        if (isAbstractPortalBlock(westPos, level, Direction.WEST)) {
+            return Direction.WEST;
+        }
 
-            if (portalDirection == Direction.WEST) {
-                return Direction.WEST;
-            }
+        // Up
+        if (isAbstractPortalBlock(upPos, level, Direction.UP)) {
+            return Direction.UP;
+        }
+
+        // Down
+        if (isAbstractPortalBlock(downPos, level, Direction.DOWN)) {
+            return Direction.DOWN;
         }
 
         return null;
+    }
+
+    public static boolean isAbstractPortalBlock(BlockPos pos, BlockGetter level, Direction direction) {
+        BlockState sourroundignBlockState = level.getBlockState(pos);
+
+        if (sourroundignBlockState.getBlock() instanceof AbstractPortalBlock || sourroundignBlockState.getBlock() instanceof AbstractFlatPortalBlock) {
+            Direction portalDirection;
+            if (sourroundignBlockState.getBlock() instanceof AbstractPortalBlock) {
+                portalDirection = level.getBlockState(pos).getValue(AbstractPortalBlock.FACING);
+            } else {
+                portalDirection = level.getBlockState(pos).getValue(AbstractFlatPortalBlock.FACING);
+            }
+
+            if (portalDirection == direction) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

@@ -24,6 +24,7 @@ import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import net.nethredras.create_portals.block.ModBlocks;
 import net.nethredras.create_portals.block.custom.AbstractPortalBlock;
+import net.nethredras.create_portals.block.custom.AbstractFlatPortalBlock;
 import net.nethredras.create_portals.block.custom.entity.PortalBlockEntity;
 import net.nethredras.create_portals.data.ModDataComponents;
 
@@ -71,15 +72,24 @@ public class PortalGunItem extends Item {
         BlockPos hitPos = hit.getBlockPos();
         Direction hitFace = hit.getDirection();
 
-        if (hitFace == Direction.UP || hitFace == Direction.DOWN) {
-            denySound(level, player);
-            return;
-        }
+        boolean isFlat = hitFace == Direction.UP || hitFace == Direction.DOWN;
 
-        if (canPlacePortal(level, hitPos, hitFace)) {
-            handlePortalPlacement(level, stack, hitPos, hitFace, color);
+        if (isFlat) {
+            // Nearest cardinal from the player's own facing — decides
+            // which horizontal direction the second half extends toward.
+            Direction orientation = player.getDirection();
+
+            if (canPlaceFlatPortal(level, hitPos, hitFace, orientation)) {
+                handleFlatPortalPlacement(level, stack, hitPos, hitFace, orientation, color);
+            } else {
+                denySound(level, player);
+            }
         } else {
-            denySound(level, player);
+            if (canPlacePortal(level, hitPos, hitFace)) {
+                handlePortalPlacement(level, stack, hitPos, hitFace, color);
+            } else {
+                denySound(level, player);
+            }
         }
     }
 
@@ -87,66 +97,13 @@ public class PortalGunItem extends Item {
         level.playSound(null, player.blockPosition(), SoundEvents.ITEM_BREAK, SoundSource.PLAYERS, 0.5F, 0.8F);
     }
 
-    /**
-     * Places the new portal in the given color's slot, evicting and
-     * unlinking whatever was previously there (which may be in a
-     * different dimension), then re-links the pair if both colors are
-     * now present.
-     */
+    // --- Wall portal placement ---
+
     private void handlePortalPlacement(ServerLevel level, ItemStack stack, BlockPos hitPos, Direction hitFace, PortalColor color) {
-        MinecraftServer server = level.getServer();
-        BlockPos newLowerPos = hitPos.relative(hitFace);
-        GlobalPos newGlobalPos = GlobalPos.of(level.dimension(), newLowerPos);
-
-        PortalGunData data = stack.getOrDefault(ModDataComponents.PORTAL_GUN_DATA.get(), PortalGunData.EMPTY);
-
-        // Drop stale entries (portal was mined / broken without the gun being told)
-        Optional<GlobalPos> bluePos = validate(server, data.bluePortal());
-        Optional<GlobalPos> orangePos = validate(server, data.orangePortal());
-
-        Optional<GlobalPos> targetSlot = color == PortalColor.BLUE ? bluePos : orangePos;
-        Optional<GlobalPos> otherSlot = color == PortalColor.BLUE ? orangePos : bluePos;
-
-        // Replace whatever was already in this color's slot
-        if (targetSlot.isPresent()) {
-            removePortal(server, targetSlot.get());
-            otherSlot.ifPresent(pos -> unlinkPortal(server, pos));
-        }
-
-        placePortal(level, hitPos, hitFace, color);
-
-        if (color == PortalColor.BLUE) {
-            bluePos = Optional.of(newGlobalPos);
-        } else {
-            orangePos = Optional.of(newGlobalPos);
-        }
-
-        if (bluePos.isPresent() && orangePos.isPresent()) {
-            linkPortals(server, bluePos.get(), orangePos.get());
-        }
-
-        stack.set(ModDataComponents.PORTAL_GUN_DATA.get(), new PortalGunData(bluePos, orangePos));
+        handlePlacement(level, stack, hitPos, hitFace, color,
+                () -> placePortal(level, hitPos, hitFace, color));
     }
 
-    /**
-     * Resolves a level from a server and dimension key. Returns null if
-     * the dimension isn't currently loaded (shouldn't normally happen
-     * for standard dimensions, but custom/removed dimensions could
-     * theoretically go missing).
-     */
-    @Nullable
-    private ServerLevel resolveLevel(MinecraftServer server, GlobalPos globalPos) {
-        return server.getLevel(globalPos.dimension());
-    }
-
-    private Optional<GlobalPos> validate(MinecraftServer server, Optional<GlobalPos> globalPos) {
-        return globalPos.filter(gp -> {
-            ServerLevel targetLevel = resolveLevel(server, gp);
-            return targetLevel != null && targetLevel.getBlockState(gp.pos()).is(ModBlocks.PORTAL_BLOCK_BOTTOM.get());
-        });
-    }
-
-    // Placing both portal halves — always in the level the player fired from
     private void placePortal(ServerLevel level, BlockPos hitPos, Direction hitFace, PortalColor color) {
         BlockPos lowerPos = hitPos.relative(hitFace);
         BlockPos upperPos = lowerPos.above();
@@ -163,15 +120,112 @@ public class PortalGunItem extends Item {
         level.setBlock(upperPos, upperState, Block.UPDATE_ALL);
     }
 
-    // Removing both halves of a portal at its bottom-block global position
+    // --- Flat (floor/ceiling) portal placement ---
+
+    private void handleFlatPortalPlacement(ServerLevel level, ItemStack stack, BlockPos hitPos, Direction hitFace,
+                                           Direction orientation, PortalColor color) {
+        handlePlacement(level, stack, hitPos, hitFace, color,
+                () -> placeFlatPortal(level, hitPos, hitFace, orientation, color));
+    }
+
+    private void placeFlatPortal(ServerLevel level, BlockPos hitPos, Direction hitFace, Direction orientation, PortalColor color) {
+        BlockPos lowerPos = hitPos.relative(hitFace);
+        BlockPos secondPos = lowerPos.relative(orientation);
+
+        BlockState lowerState = ModBlocks.FLAT_PORTAL_BLOCK_BOTTOM.get().defaultBlockState()
+                .setValue(AbstractFlatPortalBlock.FACING, hitFace)
+                .setValue(AbstractFlatPortalBlock.ORIENTATION, orientation)
+                .setValue(AbstractFlatPortalBlock.COLOR, color);
+
+        BlockState secondState = ModBlocks.FLAT_PORTAL_BLOCK_TOP.get().defaultBlockState()
+                .setValue(AbstractFlatPortalBlock.FACING, hitFace)
+                .setValue(AbstractFlatPortalBlock.ORIENTATION, orientation)
+                .setValue(AbstractFlatPortalBlock.COLOR, color);
+
+        level.setBlock(lowerPos, lowerState, Block.UPDATE_ALL);
+        level.setBlock(secondPos, secondState, Block.UPDATE_ALL);
+    }
+
+    // --- Shared placement flow (evict old slot, place, relink, save gun data) ---
+
+    private void handlePlacement(ServerLevel level, ItemStack stack, BlockPos hitPos, Direction hitFace,
+                                 PortalColor color, Runnable placer) {
+        MinecraftServer server = level.getServer();
+        BlockPos newLowerPos = hitPos.relative(hitFace);
+        GlobalPos newGlobalPos = GlobalPos.of(level.dimension(), newLowerPos);
+
+        PortalGunData data = stack.getOrDefault(ModDataComponents.PORTAL_GUN_DATA.get(), PortalGunData.EMPTY);
+
+        Optional<GlobalPos> bluePos = validate(server, data.bluePortal());
+        Optional<GlobalPos> orangePos = validate(server, data.orangePortal());
+
+        Optional<GlobalPos> targetSlot = color == PortalColor.BLUE ? bluePos : orangePos;
+        Optional<GlobalPos> otherSlot = color == PortalColor.BLUE ? orangePos : bluePos;
+
+        if (targetSlot.isPresent()) {
+            removePortal(server, targetSlot.get());
+            otherSlot.ifPresent(pos -> unlinkPortal(server, pos));
+        }
+
+        placer.run();
+
+        if (color == PortalColor.BLUE) {
+            bluePos = Optional.of(newGlobalPos);
+        } else {
+            orangePos = Optional.of(newGlobalPos);
+        }
+
+        if (bluePos.isPresent() && orangePos.isPresent()) {
+            linkPortals(server, bluePos.get(), orangePos.get());
+        }
+
+        stack.set(ModDataComponents.PORTAL_GUN_DATA.get(), new PortalGunData(bluePos, orangePos));
+    }
+
+    @Nullable
+    private ServerLevel resolveLevel(MinecraftServer server, GlobalPos globalPos) {
+        return server.getLevel(globalPos.dimension());
+    }
+
+    private Optional<GlobalPos> validate(MinecraftServer server, Optional<GlobalPos> globalPos) {
+        return globalPos.filter(gp -> {
+            ServerLevel targetLevel = resolveLevel(server, gp);
+            if (targetLevel == null) {
+                return false;
+            }
+            BlockState state = targetLevel.getBlockState(gp.pos());
+            return state.is(ModBlocks.PORTAL_BLOCK_BOTTOM.get()) || state.is(ModBlocks.FLAT_PORTAL_BLOCK_BOTTOM.get());
+        });
+    }
+
+    /**
+     * Removes both halves of whatever portal (wall or flat) sits at this
+     * global position, figuring out the second half's location from the
+     * bottom block's own type and stored orientation rather than
+     * assuming a fixed relationship.
+     */
     private void removePortal(MinecraftServer server, GlobalPos globalPos) {
         ServerLevel targetLevel = resolveLevel(server, globalPos);
         if (targetLevel == null) {
             return;
         }
+
         BlockPos lowerPos = globalPos.pos();
+        BlockState lowerState = targetLevel.getBlockState(lowerPos);
+
+        BlockPos secondPos;
+        if (lowerState.is(ModBlocks.PORTAL_BLOCK_BOTTOM.get())) {
+            secondPos = lowerPos.above();
+        } else if (lowerState.is(ModBlocks.FLAT_PORTAL_BLOCK_BOTTOM.get())) {
+            Direction orientation = lowerState.getValue(AbstractFlatPortalBlock.ORIENTATION);
+            secondPos = lowerPos.relative(orientation);
+        } else {
+            // Already gone or not a recognized bottom block — nothing to do
+            return;
+        }
+
         targetLevel.setBlock(lowerPos, Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL);
-        targetLevel.setBlock(lowerPos.above(), Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL);
+        targetLevel.setBlock(secondPos, Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL);
     }
 
     private void linkPortals(MinecraftServer server, GlobalPos globalA, GlobalPos globalB) {
@@ -201,6 +255,8 @@ public class PortalGunItem extends Item {
         }
     }
 
+    // --- Shared validity checks (used by both wall and flat placement) ---
+
     private boolean isValidWallFace(Level level, BlockPos wallPos, Direction face) {
         BlockState state = level.getBlockState(wallPos);
 
@@ -226,9 +282,7 @@ public class PortalGunItem extends Item {
             return false;
         }
 
-        if (state.is(ModBlocks.PORTAL_BLOCK_BOTTOM.get()) || state.is(ModBlocks.PORTAL_BLOCK_TOP.get())) {
-            return false;
-        }
+
 
         return true;
     }
@@ -241,10 +295,19 @@ public class PortalGunItem extends Item {
         BlockPos lowerPos = hitPos.relative(hitFace);
         BlockPos upperPos = lowerPos.above();
 
-        if (!isSpaceValid(level, lowerPos) || !isSpaceValid(level, upperPos)) {
+        return isSpaceValid(level, lowerPos) && isSpaceValid(level, upperPos);
+    }
+
+    public boolean canPlaceFlatPortal(Level level, BlockPos hitPos, Direction hitFace, Direction orientation) {
+        BlockPos secondFloorPos = hitPos.relative(orientation);
+
+        if (!isValidWallFace(level, hitPos, hitFace) || !isValidWallFace(level, secondFloorPos, hitFace)) {
             return false;
         }
 
-        return true;
+        BlockPos lowerPos = hitPos.relative(hitFace);
+        BlockPos secondPos = lowerPos.relative(orientation);
+
+        return isSpaceValid(level, lowerPos) && isSpaceValid(level, secondPos);
     }
 }
