@@ -3,6 +3,7 @@ package net.nethredras.create_portals.event;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.GlobalPos;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
@@ -33,7 +34,7 @@ public class ModEvents {
     // block behind a floor/ceiling portal before teleporting. Higher =
     // later trigger, more of the player model visibly submerged. Clamped
     // below 1.0 so there's always a margin before the hard safety line.
-    private static final double FLAT_PENETRATION_DEPTH = Math.min(0.65, 0.95);
+    private static final double FLAT_PENETRATION_DEPTH = Math.min(0.25, 0.45);
 
     // Rough distance from eye position down to shoulder height, used only
     // for timing the ceiling trigger — detection of "which portal cell is
@@ -47,6 +48,7 @@ public class ModEvents {
         if (player.level().isClientSide || !(player instanceof ServerPlayer serverPlayer)) {
             return;
         }
+
 
         ServerLevel level = (ServerLevel) serverPlayer.level();
         UUID playerId = serverPlayer.getUUID();
@@ -66,6 +68,8 @@ public class ModEvents {
         if (!(level.getBlockEntity(bottomPortalPos) instanceof PortalBlockEntity portalBe) || !portalBe.isLinked()) {
             return;
         }
+
+
 
         teleportPlayer(serverPlayer, bottomPortalPos, portalBe.getLinkedPortal());
     }
@@ -168,7 +172,7 @@ public class ModEvents {
          * Add velocity to player depending on the direction of the end portal
          */
         BlockState destinationBlockState = endPortalLevel.getBlockState(linkedPortalPos);
-        Direction endPortalDest;
+        Direction endPortalDestDirection;
 
         // Base velocity
         Vec3 velocity = player.getDeltaMovement();
@@ -183,15 +187,15 @@ public class ModEvents {
         double extraVelocityZ = 0.5;
 
         // End velocity
-        double endVelocityX = baseVelocityX;
-        double endVelocityY = baseVelocityY;
-        double endVelocityZ = baseVelocityZ;
+        double endVelocityX = 0;
+        double endVelocityY = 0;
+        double endVelocityZ = 0;
 
         // Get end portal direction
         if (destinationBlockState.getBlock() instanceof AbstractFlatPortalBlock abstractFlatPortalBlock) {
-            endPortalDest = destinationBlockState.getValue(AbstractFlatPortalBlock.FACING);
+            endPortalDestDirection = destinationBlockState.getValue(AbstractFlatPortalBlock.FACING);
         } else {
-            endPortalDest = destinationBlockState.getValue(AbstractPortalBlock.FACING);
+            endPortalDestDirection = destinationBlockState.getValue(AbstractPortalBlock.FACING);
         }
 
         // Calc player facing
@@ -201,10 +205,39 @@ public class ModEvents {
         float newYaw = player.getYRot() + computeYawDelta(sourceOrientation, destOrientation);
 
         // Calc new velocity
-        if (endPortalDest == Direction.UP || endPortalDest == Direction.DOWN) {
-            endVelocityY = baseVelocityY + extraVelocityY;
-        } else {
-            endVelocityX = baseVelocityX + extraVelocityX;
+        switch (endPortalDestDirection) {
+            case DOWN:
+                endVelocityY+= baseVelocityX + baseVelocityZ;
+
+                if (sourceOrientation.reference == Direction.UP) {
+                    endVelocityY+= (baseVelocityY * -1);
+                } else {
+                    endVelocityY+= baseVelocityY;
+                }
+
+                endVelocityX = 0;
+                endVelocityZ = 0;
+                break;
+            case UP:
+                //player.sendSystemMessage(Component.literal(baseVelocityX + ""));
+                //player.sendSystemMessage(Component.literal(baseVelocityZ + ""));
+
+                endVelocityY+= baseVelocityX + baseVelocityZ;
+
+                if (sourceOrientation.reference == Direction.DOWN) {
+                    //endVelocityY+= (baseVelocityY * -1);
+                } else {
+                    //endVelocityY+= baseVelocityY;
+                }
+
+                endVelocityX = 0;
+                endVelocityZ = 0;
+
+                //player.sendSystemMessage(Component.literal(endVelocityY + ""));
+                break;
+            case NORTH:
+
+                break;
         }
 
 
