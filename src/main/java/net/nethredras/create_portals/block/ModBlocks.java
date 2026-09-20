@@ -13,6 +13,7 @@ import net.nethredras.create_portals.block.custom.PortalBlockBottom;
 import net.nethredras.create_portals.block.custom.PortalBlockTop;
 import net.nethredras.create_portals.block.custom.FlatPortalBlockTop;
 import net.nethredras.create_portals.item.ModItems;
+import net.nethredras.create_portals.sound.ModSounds;
 
 import java.util.function.Supplier;
 
@@ -36,25 +37,29 @@ public class ModBlocks {
             () -> new PortalBlockBottom(BlockBehaviour.Properties.of()
                     .noOcclusion()
                     .noCollission()
-                    .replaceable()));
+                    .replaceable()
+                    .sound(ModSounds.PORTAL_BLOCK_SOUNDS)));
 
     public static final DeferredBlock<PortalBlockTop> PORTAL_BLOCK_TOP = BLOCKS.register("portal_block_top",
             () -> new PortalBlockTop(BlockBehaviour.Properties.of()
                     .noOcclusion()
                     .noCollission()
-                    .replaceable()));
+                    .replaceable()
+                    .sound(ModSounds.PORTAL_BLOCK_SOUNDS)));
 
     public static final DeferredBlock<FlatPortalBlockBottom> FLAT_PORTAL_BLOCK_BOTTOM = BLOCKS.register("flat_portal_block_bottom",
             () -> new FlatPortalBlockBottom(BlockBehaviour.Properties.of()
                     .noOcclusion()
                     .noCollission()
-                    .replaceable()));
+                    .replaceable()
+                    .sound(ModSounds.PORTAL_BLOCK_SOUNDS)));
 
     public static final DeferredBlock<FlatPortalBlockTop> FLAT_PORTAL_BLOCK_TOP = BLOCKS.register("flat_portal_block_top",
             () -> new FlatPortalBlockTop(BlockBehaviour.Properties.of()
                     .noOcclusion()
                     .noCollission()
-                    .replaceable()));
+                    .replaceable()
+                    .sound(ModSounds.PORTAL_BLOCK_SOUNDS)));
 
 
     // Event Bus

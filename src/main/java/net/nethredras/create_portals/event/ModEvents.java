@@ -6,6 +6,7 @@ import net.minecraft.core.GlobalPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
@@ -18,6 +19,7 @@ import net.nethredras.create_portals.block.custom.AbstractFlatPortalBlock;
 import net.nethredras.create_portals.block.custom.AbstractPortalBlock;
 import net.nethredras.create_portals.block.custom.FlatPortalBlockBottom;
 import net.nethredras.create_portals.block.custom.entity.PortalBlockEntity;
+import net.nethredras.create_portals.sound.ModSounds;
 import net.nethredras.create_portals.util.PortalDetectionUtil;
 
 import java.util.HashSet;
@@ -60,9 +62,15 @@ public class ModEvents {
             return;
         }
 
-
-
         teleportPlayer(serverPlayer, bottomPortalPos, portalBe.getLinkedPortal());
+    }
+
+    public static void playSound(Level level, Player player) {
+        if ((int) (Math.random() * 2) + 1 == 1) {
+            level.playSound(null, player.blockPosition(), ModSounds.PORTAL_ENTER1.get(), SoundSource.PLAYERS, 0.3F, 0.6F);
+        } else {
+            level.playSound(null, player.blockPosition(), ModSounds.PORTAL_ENTER2.get(), SoundSource.PLAYERS, 0.3F, 0.6F);
+        }
     }
 
     /**
@@ -194,6 +202,10 @@ public class ModEvents {
                 Set.of(), newYaw, player.getXRot());
 
         player.resetFallDistance();
+
+        // Play sound
+        playSound(endPortalLevel, player);
+
 
         player.setDeltaMovement(endVelocity);
         player.hurtMarked = true;

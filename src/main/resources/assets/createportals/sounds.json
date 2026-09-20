@@ -1,0 +1,38 @@
+{
+  "portal_denied": {
+  "subtitle": "sounds.create_portals.portal_denied",
+    "sounds": [
+      "createportals:portal_denied"
+    ]
+  },
+  "portal_enter1": {
+    "subtitle": "sounds.create_portals.portal_enter1",
+    "sounds": [
+      "createportals:portal_enter1"
+    ]
+  },
+  "portal_enter2": {
+    "subtitle": "sounds.create_portals.portal_enter2",
+    "sounds": [
+      "createportals:portal_enter2"
+    ]
+  },
+  "portal_fired1": {
+    "subtitle": "sounds.create_portals.portal_fired1",
+    "sounds": [
+      "createportals:portal_fired1"
+    ]
+  },
+  "portal_fired2": {
+    "subtitle": "sounds.create_portals.portal_fired2",
+    "sounds": [
+      "createportals:portal_fired2"
+    ]
+  },
+  "portal_placed": {
+    "subtitle": "sounds.create_portals.portal_placed",
+    "sounds": [
+      "createportals:portal_placed"
+    ]
+  }
+}

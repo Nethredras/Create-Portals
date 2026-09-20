@@ -6,6 +6,7 @@ import net.nethredras.create_portals.data.ModDataComponents;
 import net.nethredras.create_portals.item.ModCreativeModeTabs;
 import net.nethredras.create_portals.item.ModItems;
 import net.nethredras.create_portals.network.ModNetworking;
+import net.nethredras.create_portals.sound.ModSounds;
 import org.slf4j.Logger;
 
 import com.mojang.logging.LogUtils;
@@ -52,6 +53,7 @@ public class CreatePortals {
         ModBlocks.register(modEventBus);
         ModBlockEntities.register(modEventBus);
         ModDataComponents.register(modEventBus);
+        ModSounds.register(modEventBus);
     }
 
     private void commonSetup(FMLCommonSetupEvent event) {

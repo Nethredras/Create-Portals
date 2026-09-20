@@ -27,6 +27,7 @@ import net.nethredras.create_portals.block.custom.AbstractPortalBlock;
 import net.nethredras.create_portals.block.custom.AbstractFlatPortalBlock;
 import net.nethredras.create_portals.block.custom.entity.PortalBlockEntity;
 import net.nethredras.create_portals.data.ModDataComponents;
+import net.nethredras.create_portals.sound.ModSounds;
 
 import javax.annotation.Nullable;
 import java.util.Optional;
@@ -69,6 +70,12 @@ public class PortalGunItem extends Item {
             return;
         }
 
+        if (color == PortalColor.BLUE) {
+            level.playSound(null, player.blockPosition(), ModSounds.PORTAL_FIRED1.get(), SoundSource.PLAYERS, 0.3F, 0.6F);
+        } else {
+            level.playSound(null, player.blockPosition(), ModSounds.PORTAL_FIRED2.get(), SoundSource.PLAYERS, 0.3F, 0.6F);
+        }
+
         BlockPos hitPos = hit.getBlockPos();
         Direction hitFace = hit.getDirection();
 
@@ -94,7 +101,7 @@ public class PortalGunItem extends Item {
     }
 
     private void denySound(ServerLevel level, ServerPlayer player) {
-        level.playSound(null, player.blockPosition(), SoundEvents.ITEM_BREAK, SoundSource.PLAYERS, 0.5F, 0.8F);
+        level.playSound(null, player.blockPosition(), ModSounds.PORTAL_DENIED.get(), SoundSource.PLAYERS, 0.5F, 0.8F);
     }
 
     // --- Wall portal placement ---
