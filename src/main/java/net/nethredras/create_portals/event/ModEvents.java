@@ -206,7 +206,6 @@ public class ModEvents {
         // Play sound
         playSound(endPortalLevel, player);
 
-
         player.setDeltaMovement(endVelocity);
         player.hurtMarked = true;
     }

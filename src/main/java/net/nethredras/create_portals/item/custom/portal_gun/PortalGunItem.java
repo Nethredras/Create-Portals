@@ -271,6 +271,30 @@ public class PortalGunItem extends Item {
             return false;
         }
 
+        BlockState directionalState;
+
+        switch (face) {
+            case NORTH:
+                directionalState = level.getBlockState(wallPos.north());
+                break;
+            case EAST:
+                directionalState = level.getBlockState(wallPos.east());
+                break;
+            case SOUTH:
+                directionalState = level.getBlockState(wallPos.south());
+                break;
+            case DOWN:
+                directionalState = level.getBlockState(wallPos.below());
+                break;
+            default:
+                directionalState = level.getBlockState(wallPos.above());
+                break;
+        }
+
+        if (directionalState.getBlock() instanceof AbstractPortalBlock || directionalState.getBlock() instanceof AbstractFlatPortalBlock) {
+            return true;
+        }
+
         return Block.isFaceFull(state.getCollisionShape(level, wallPos), face);
     }
 
@@ -285,13 +309,7 @@ public class PortalGunItem extends Item {
     private boolean isSpaceValid(Level level, BlockPos pos) {
         BlockState state = level.getBlockState(pos);
 
-        if (!state.canBeReplaced()) {
-            return false;
-        }
-
-
-
-        return true;
+        return state.canBeReplaced();
     }
 
     public boolean canPlacePortal(Level level, BlockPos hitPos, Direction hitFace) {
