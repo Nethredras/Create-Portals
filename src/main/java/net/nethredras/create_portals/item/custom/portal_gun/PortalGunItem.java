@@ -283,6 +283,9 @@ public class PortalGunItem extends Item {
             case SOUTH:
                 directionalState = level.getBlockState(wallPos.south());
                 break;
+            case WEST:
+                directionalState = level.getBlockState(wallPos.west());
+                break;
             case DOWN:
                 directionalState = level.getBlockState(wallPos.below());
                 break;
