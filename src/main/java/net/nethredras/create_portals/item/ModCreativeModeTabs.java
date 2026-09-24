@@ -8,6 +8,7 @@ import net.minecraft.world.item.Items;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import net.nethredras.create_portals.CreatePortals;
+import net.nethredras.create_portals.block.ModBlocks;
 
 import java.util.function.Supplier;
 
@@ -20,7 +21,12 @@ public class ModCreativeModeTabs {
                     .title(Component.translatable("Create: Portals"))
                     .displayItems((parameters, output) -> {
 
+                    // Items
                     output.accept(ModItems.PORTAL_GUN);
+
+                    // Blocks
+                    output.accept(ModBlocks.CRIMSON_AMETHYST_BLOCK);
+                    output.accept(ModBlocks.WARPED_AMETHYST_BLOCK);
 
                     }).build());
 

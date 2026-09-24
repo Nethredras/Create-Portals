@@ -3,6 +3,7 @@ package net.nethredras.create_portals.block;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.registries.DeferredBlock;
@@ -38,6 +39,7 @@ public class ModBlocks {
                     .noOcclusion()
                     .noCollission()
                     .replaceable()
+                    .noLootTable()
                     .sound(ModSounds.PORTAL_BLOCK_SOUNDS)));
 
     public static final DeferredBlock<PortalBlockTop> PORTAL_BLOCK_TOP = BLOCKS.register("portal_block_top",
@@ -45,6 +47,7 @@ public class ModBlocks {
                     .noOcclusion()
                     .noCollission()
                     .replaceable()
+                    .noLootTable()
                     .sound(ModSounds.PORTAL_BLOCK_SOUNDS)));
 
     public static final DeferredBlock<FlatPortalBlockBottom> FLAT_PORTAL_BLOCK_BOTTOM = BLOCKS.register("flat_portal_block_bottom",
@@ -52,6 +55,7 @@ public class ModBlocks {
                     .noOcclusion()
                     .noCollission()
                     .replaceable()
+                    .noLootTable()
                     .sound(ModSounds.PORTAL_BLOCK_SOUNDS)));
 
     public static final DeferredBlock<FlatPortalBlockTop> FLAT_PORTAL_BLOCK_TOP = BLOCKS.register("flat_portal_block_top",
@@ -59,7 +63,15 @@ public class ModBlocks {
                     .noOcclusion()
                     .noCollission()
                     .replaceable()
+                    .noLootTable()
                     .sound(ModSounds.PORTAL_BLOCK_SOUNDS)));
+
+    // Amethysts
+    public static final DeferredBlock<Block> WARPED_AMETHYST_BLOCK = registerBlock("warped_amethyst_block",
+            () -> new Block(BlockBehaviour.Properties.ofFullCopy(Blocks.AMETHYST_BLOCK)));
+
+    public static final DeferredBlock<Block> CRIMSON_AMETHYST_BLOCK = registerBlock("crimson_amethyst_block",
+            () -> new Block(BlockBehaviour.Properties.ofFullCopy(Blocks.AMETHYST_BLOCK)));
 
 
     // Event Bus

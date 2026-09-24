@@ -2,5 +2,8 @@
   "item.createportals.portal_gun": "Portal Gun",
 
   "painting.createportals.cave_johnson.title": "Cave Johnson",
-  "painting.createportals.cave_johnson.author": "Jeremy Bennett"
+  "painting.createportals.cave_johnson.author": "Jeremy Bennett",
+
+  "block.createportals.crimson_amethyst_block": "Crimson Amethyst",
+  "block.createportals.warped_amethyst_block": "Warped Amethyst"
 }
