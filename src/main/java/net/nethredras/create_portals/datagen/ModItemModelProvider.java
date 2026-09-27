@@ -13,5 +13,7 @@ public class ModItemModelProvider extends ItemModelProvider {
 
     @Override
     protected void registerModels() {
+        basicItem(ModItems.CRIMSON_SHARD.get());
+        basicItem(ModItems.WARPED_SHARD.get());
     }
 }

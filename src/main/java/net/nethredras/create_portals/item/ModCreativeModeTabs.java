@@ -23,6 +23,8 @@ public class ModCreativeModeTabs {
 
                     // Items
                     output.accept(ModItems.PORTAL_GUN);
+                    output.accept(ModItems.CRIMSON_SHARD);
+                    output.accept(ModItems.WARPED_SHARD);
 
                     // Blocks
                     output.accept(ModBlocks.CRIMSON_AMETHYST_BLOCK);
