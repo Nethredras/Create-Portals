@@ -29,6 +29,7 @@ public class ModCreativeModeTabs {
                     // Blocks
                     output.accept(ModBlocks.CRIMSON_AMETHYST_BLOCK);
                     output.accept(ModBlocks.WARPED_AMETHYST_BLOCK);
+                    output.accept(ModBlocks.CRIMSON_CRYSTAL);
 
                     }).build());
 

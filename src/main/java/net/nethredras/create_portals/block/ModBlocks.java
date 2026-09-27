@@ -73,6 +73,9 @@ public class ModBlocks {
     public static final DeferredBlock<Block> CRIMSON_AMETHYST_BLOCK = registerBlock("crimson_amethyst_block",
             () -> new Block(BlockBehaviour.Properties.ofFullCopy(Blocks.AMETHYST_BLOCK)));
 
+    public static final DeferredBlock<Block> CRIMSON_CRYSTAL = registerBlock("crimson_crystal",
+            () -> new Block(BlockBehaviour.Properties.ofFullCopy(Blocks.LARGE_AMETHYST_BUD)));
+
 
     // Event Bus
     public static void register(IEventBus eventBus) {

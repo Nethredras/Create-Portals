@@ -16,6 +16,7 @@ public class ModBlockStateProvider extends BlockStateProvider {
     protected void registerStatesAndModels() {
         blockWithItem(ModBlocks.CRIMSON_AMETHYST_BLOCK);
         blockWithItem(ModBlocks.WARPED_AMETHYST_BLOCK);
+        blockWithItem(ModBlocks.CRIMSON_CRYSTAL);
     }
 
     private void blockWithItem(DeferredBlock<?> deferredBlock) {
