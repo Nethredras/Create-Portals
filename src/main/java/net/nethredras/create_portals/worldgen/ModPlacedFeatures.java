@@ -16,13 +16,18 @@ import java.util.List;
 
 public class ModPlacedFeatures {
     public static final ResourceKey<PlacedFeature> WARPED_GEODE_PLACED_KEY = registerKey("warped_geode_placed");
+    public static final ResourceKey<PlacedFeature> CRIMSON_GEODE_PLACED_KEY = registerKey("crimson_geode_placed");
 
     public static void bootstrap(BootstrapContext<PlacedFeature> context) {
         var configuredFeatures = context.lookup(Registries.CONFIGURED_FEATURE);
 
         register(context, WARPED_GEODE_PLACED_KEY, configuredFeatures.getOrThrow(ModConfiguredFeatures.WARPED_GEODE_KEY),
-                ModGeodePlacement.geodePlacement(1, 64, -64)
+                ModGeodePlacement.geodePlacement(1, 60, 10)
                  );
+
+        register(context, CRIMSON_GEODE_PLACED_KEY, configuredFeatures.getOrThrow(ModConfiguredFeatures.CRIMSON_GEODE_KEY),
+                ModGeodePlacement.geodePlacement(1, 60, 10)
+        );
     }
 
     private static ResourceKey<PlacedFeature> registerKey(String name) {

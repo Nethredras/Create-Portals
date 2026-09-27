@@ -18,15 +18,24 @@ import net.nethredras.create_portals.CreatePortals;
 public class ModBiomeModifiers {
 
     public static final ResourceKey<BiomeModifier> ADD_WARPED_GEODE = registerKey("warped_geode");
+    public static final ResourceKey<BiomeModifier> ADD_CRIMSON_GEODE = registerKey("crimson_geode");
 
     public static void bootstrap(BootstrapContext<BiomeModifier> context) {
         var placedFeature = context.lookup(Registries.PLACED_FEATURE);
         var biomes = context.lookup(Registries.BIOME);
 
+        // Warped Geode
         context.register(ADD_WARPED_GEODE, new BiomeModifiers.AddFeaturesBiomeModifier(
-                biomes.getOrThrow(BiomeTags.IS_OVERWORLD),
+                HolderSet.direct(biomes.getOrThrow(Biomes.WARPED_FOREST)),
                 HolderSet.direct(placedFeature.getOrThrow(ModPlacedFeatures.WARPED_GEODE_PLACED_KEY)),
-                GenerationStep.Decoration.UNDERGROUND_DECORATION
+                GenerationStep.Decoration.LOCAL_MODIFICATIONS
+        ));
+
+        // Crimson Geode
+        context.register(ADD_CRIMSON_GEODE, new BiomeModifiers.AddFeaturesBiomeModifier(
+                HolderSet.direct(biomes.getOrThrow(Biomes.CRIMSON_FOREST)),
+                HolderSet.direct(placedFeature.getOrThrow(ModPlacedFeatures.CRIMSON_GEODE_PLACED_KEY)),
+                GenerationStep.Decoration.LOCAL_MODIFICATIONS
         ));
     }
 

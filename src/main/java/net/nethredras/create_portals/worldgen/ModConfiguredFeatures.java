@@ -22,25 +22,44 @@ import java.util.List;
 
 public class ModConfiguredFeatures {
     public static final ResourceKey<ConfiguredFeature<?, ?>> WARPED_GEODE_KEY = registerKey("warped_geode_placed");
+    public static final ResourceKey<ConfiguredFeature<?, ?>> CRIMSON_GEODE_KEY = registerKey("crimson_geode_placed");
 
     public static void bootstrap(BootstrapContext<ConfiguredFeature<?, ?>> context) {
         var configuredFeatures = context.lookup(Registries.CONFIGURED_FEATURE);
 
-
-        register(context, WARPED_GEODE_KEY, Feature.GEODE, new GeodeConfiguration(new GeodeBlockSettings(BlockStateProvider.simple(Blocks.AIR),
+        // Warped Geode
+        register(context, WARPED_GEODE_KEY, Feature.GEODE, new GeodeConfiguration(new GeodeBlockSettings(
+                BlockStateProvider.simple(Blocks.AIR),
                 BlockStateProvider.simple(ModBlocks.WARPED_AMETHYST_BLOCK.get()),
-                BlockStateProvider.simple(Blocks.DIAMOND_BLOCK),
+                BlockStateProvider.simple(Blocks.SHROOMLIGHT),
                 BlockStateProvider.simple(Blocks.CALCITE),
-                BlockStateProvider.simple(Blocks.BASALT),
-                List.of(ModBlocks.CRIMSON_AMETHYST_BLOCK.get().defaultBlockState()),
+                BlockStateProvider.simple(Blocks.SMOOTH_BASALT),
+                List.of(Blocks.SHROOMLIGHT.defaultBlockState()),
                 BlockTags.FEATURES_CANNOT_REPLACE, BlockTags.GEODE_INVALID_BLOCKS),
-                new GeodeLayerSettings(1.7, 2.2, 3.2, 4.2),
-                new GeodeCrackSettings(0.95, 2.0, 2), 0.35, 0.083,
+                new GeodeLayerSettings(6, 8.7, 7.5, 15),
+                new GeodeCrackSettings(0.5, 2.0, 2), 0.35, 0.083,
                 true,
                 UniformInt.of(4, 6),
                 UniformInt.of(3, 4),
                 UniformInt.of(1, 2),
-                -16, 16, 0.05, 1));
+                -16, 16, 0.02, 1));
+
+        // Crimson Geode
+        register(context, CRIMSON_GEODE_KEY, Feature.GEODE, new GeodeConfiguration(new GeodeBlockSettings(
+                BlockStateProvider.simple(Blocks.AIR),
+                BlockStateProvider.simple(ModBlocks.CRIMSON_AMETHYST_BLOCK.get()),
+                BlockStateProvider.simple(Blocks.SHROOMLIGHT),
+                BlockStateProvider.simple(Blocks.CALCITE),
+                BlockStateProvider.simple(Blocks.SMOOTH_BASALT),
+                List.of(Blocks.SHROOMLIGHT.defaultBlockState()),
+                BlockTags.FEATURES_CANNOT_REPLACE, BlockTags.GEODE_INVALID_BLOCKS),
+                new GeodeLayerSettings(6, 8.7, 7.5, 15),
+                new GeodeCrackSettings(0.5, 2.0, 2), 0.35, 0.083,
+                true,
+                UniformInt.of(4, 6),
+                UniformInt.of(3, 4),
+                UniformInt.of(1, 2),
+                -16, 16, 0.02, 1));
     }
 
     private static ResourceKey<ConfiguredFeature<?, ?>> registerKey(String name) {
