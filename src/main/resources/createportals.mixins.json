@@ -4,7 +4,10 @@
   "package": "net.nethredras.create_portals.mixin",
   "compatibilityLevel": "JAVA_21",
   "mixins": [
-    "PortalCollisionMixer"
+    "PortalCollisionMixer",
+    "PortalGunArmPositionMixin"
   ],
-  "client": []
+  "client": [
+    "PortalGunArmPositionMixin"
+  ]
 }
